@@ -4,7 +4,6 @@ Unit tests for ast-guard formatters (Console, JSON, and SARIF 2.1.0).
 
 import json
 import unittest
-from pathlib import Path
 
 from ast_guard.formatters.console import format_console
 from ast_guard.formatters.json_out import format_json

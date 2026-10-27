@@ -10,7 +10,7 @@ from __future__ import annotations
 import io
 import tokenize
 from pathlib import Path
-from typing import Dict, List, Optional, Set
+from typing import Any, Dict, Optional, Set
 
 
 class RuleContext:
@@ -91,9 +91,9 @@ class RuleContext:
         end = min(len(self.source_lines), line + context_lines)
 
         snippet_parts = []
-        for l in range(start, end + 1):
-            prefix = " > " if l == line else "   "
-            line_str = self.source_lines[l - 1]
-            snippet_parts.append(f"{prefix}{l:4d} | {line_str}")
+        for lineno in range(start, end + 1):
+            prefix = " > " if lineno == line else "   "
+            line_str = self.source_lines[lineno - 1]
+            snippet_parts.append(f"{prefix}{lineno:4d} | {line_str}")
 
         return "\n".join(snippet_parts)

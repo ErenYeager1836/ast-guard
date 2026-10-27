@@ -12,7 +12,7 @@ import os
 import time
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Set, Type
+from typing import Dict, List, Optional, Set, Type
 
 from ast_guard.context import RuleContext
 from ast_guard.models import Finding, ScanError, ScanResult, Severity

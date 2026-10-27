@@ -58,11 +58,15 @@ class InsecureDeserializationRule(BaseRule):
 
         # Case 1: pickle / shelve
         if call_name in self.PICKLE_FUNCS:
+            msg = (
+                f"Insecure deserialization via '{call_name}'. "
+                "Pickle byte streams can execute arbitrary code during unpickling."
+            )
             return [
                 self.create_finding(
                     node,
                     context,
-                    message=f"Insecure deserialization via '{call_name}'. Pickle byte streams can execute arbitrary code during unpickling.",
+                    message=msg,
                 )
             ]
 
@@ -79,11 +83,15 @@ class InsecureDeserializationRule(BaseRule):
 
             # If Loader is missing or not SafeLoader, report finding
             if not has_safe_loader:
+                msg = (
+                    "yaml.load() called without SafeLoader. "
+                    "Use yaml.safe_load() to prevent arbitrary Python object instantiation."
+                )
                 return [
                     self.create_finding(
                         node,
                         context,
-                        message="yaml.load() called without SafeLoader. Use yaml.safe_load() to prevent arbitrary Python object instantiation.",
+                        message=msg,
                         remediation="Use yaml.safe_load(payload) or pass Loader=yaml.SafeLoader explicitly.",
                     )
                 ]

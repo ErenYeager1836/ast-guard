@@ -33,7 +33,8 @@ class SQLInjectionRule(BaseRule):
         "string formatting, concatenation, or f-strings instead of parameterized placeholders."
     )
     remediation = (
-        "Use parameterized queries provided by your database driver (e.g., cursor.execute('SELECT * FROM users WHERE id = %s', (user_id,)) "
+        "Use parameterized queries provided by your database driver (e.g., "
+        "cursor.execute('SELECT * FROM users WHERE id = %s', (user_id,)) "
         "or an ORM like SQLAlchemy) to safely bind parameters and prevent SQL injection."
     )
 
@@ -91,14 +92,15 @@ class SQLInjectionRule(BaseRule):
                         for target in ast_node.targets:
                             if isinstance(target, ast.Name) and target.id == var_name:
                                 if self.is_string_formatting(ast_node.value):
+                                    msg = (
+                                        f"Possible SQL injection detected: variable '{var_name}' "
+                                        f"passed to '{call_name}()' was dynamically formatted on line {assign_line}."
+                                    )
                                     return [
                                         self.create_finding(
                                             node,
                                             context,
-                                            message=(
-                                                f"Possible SQL injection detected: variable '{var_name}' passed to '{call_name}()' "
-                                                f"was dynamically formatted on line {assign_line}."
-                                            ),
+                                            message=msg,
                                         )
                                     ]
 

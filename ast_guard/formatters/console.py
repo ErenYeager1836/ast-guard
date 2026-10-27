@@ -10,7 +10,7 @@ from __future__ import annotations
 import sys
 from typing import List
 
-from ast_guard.models import Finding, ScanResult, Severity
+from ast_guard.models import ScanResult, Severity
 
 
 class Colors:

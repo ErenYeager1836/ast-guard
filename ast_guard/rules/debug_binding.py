@@ -61,11 +61,15 @@ class InsecureDebugBindingRule(BaseRule):
             # Check debug=True
             if kw.arg == "debug":
                 if isinstance(kw.value, ast.Constant) and kw.value.value is True:
+                    msg = (
+                        f"Server executed with debug=True via '{call_name}()'. "
+                        "Interactive debug consoles permit remote code execution."
+                    )
                     findings.append(
                         self.create_finding(
                             node,
                             context,
-                            message=f"Server executed with debug=True via '{call_name}()'. Interactive debug consoles permit remote code execution.",
+                            message=msg,
                             severity=Severity.HIGH,
                         )
                     )
@@ -73,11 +77,15 @@ class InsecureDebugBindingRule(BaseRule):
             # Check host='0.0.0.0'
             elif kw.arg == "host":
                 if isinstance(kw.value, ast.Constant) and kw.value.value in {"0.0.0.0", "::"}:
+                    msg = (
+                        f"Server bound to all interfaces ('{kw.value.value}') via '{call_name}()'. "
+                        "May expose unintended services to the local network."
+                    )
                     findings.append(
                         self.create_finding(
                             node,
                             context,
-                            message=f"Server bound to all interfaces ('{kw.value.value}') via '{call_name}()'. May expose unintended services to the local network.",
+                            message=msg,
                             severity=Severity.MEDIUM,
                         )
                     )

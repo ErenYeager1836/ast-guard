@@ -11,7 +11,7 @@ import unittest
 from pathlib import Path
 
 from ast_guard.context import RuleContext
-from ast_guard.models import Confidence, Severity
+from ast_guard.models import Severity
 from ast_guard.rules.command_injection import CommandInjectionRule
 from ast_guard.rules.crypto import WeakCryptoRule
 from ast_guard.rules.debug_binding import InsecureDebugBindingRule

@@ -118,11 +118,15 @@ class HardcodedSecretRule(BaseRule):
         confidence = Confidence.HIGH if (entropy >= 3.0 or len(val) >= 24) else Confidence.MEDIUM
 
         masked = self.mask_secret(val)
+        msg = (
+            f"Hardcoded sensitive value assigned to variable '{target_name}' "
+            f"(value: '{masked}', entropy: {entropy:.2f})."
+        )
         return [
             self.create_finding(
                 node,
                 context,
-                message=f"Hardcoded sensitive value assigned to variable '{target_name}' (value: '{masked}', entropy: {entropy:.2f}).",
+                message=msg,
                 confidence=confidence,
             )
         ]

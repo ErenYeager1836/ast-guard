@@ -79,7 +79,10 @@ class CommandInjectionRule(BaseRule):
             ]
 
         # Case 2: subprocess with shell=True keyword argument or positional bool
-        if call_name in self.SUBPROCESS_FUNCS or (isinstance(node.func, ast.Attribute) and node.func.attr in {"Popen", "run", "call", "check_call", "check_output"}):
+        is_attr_match = isinstance(node.func, ast.Attribute) and node.func.attr in {
+            "Popen", "run", "call", "check_call", "check_output"
+        }
+        if call_name in self.SUBPROCESS_FUNCS or is_attr_match:
             for kw in node.keywords:
                 if kw.arg == "shell":
                     # Check if shell is assigned True
