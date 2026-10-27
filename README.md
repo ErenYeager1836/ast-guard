@@ -228,7 +228,8 @@ os.system("clear")  # ast-guard: ignore[AG-102]
 
 ## GitHub Actions CI Integration
 
-To upload scan results into GitHub's **Security -> Code Scanning** dashboard, add this step to `.github/workflows/security.yml`:
+### Option 1: Using the Composite Action (Recommended)
+Integrate `ast-guard` directly into any GitHub workflow in 3 lines:
 
 ```yaml
 name: Security Scan
@@ -242,14 +243,38 @@ jobs:
   sast:
     name: Run ast-guard SAST
     runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
     steps:
+      - uses: actions/checkout@v4
+
+      - name: Scan with ast-guard
+        uses: ErenYeager1836/ast-guard@v1
+        with:
+          target: '.'
+          format: 'sarif'
+          output: 'ast-guard.sarif'
+          severity: 'LOW'
+          fail-on: 'HIGH'
+
+      - name: Upload to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'ast-guard.sarif'
+```
+
+### Option 2: Direct Command Line Integration
+```yaml
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
       - name: Scan Codebase & Export SARIF
         run: |
-          python -m ast_guard . --sarif results.sarif --fail-on HIGH
+          pip install ast-guard
+          ast-guard . --sarif results.sarif --fail-on HIGH
       - name: Upload to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v3
         if: always()

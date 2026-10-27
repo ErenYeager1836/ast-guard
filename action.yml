@@ -1,0 +1,58 @@
+name: 'ast-guard SAST Scanner'
+description: 'Lightweight AST-based Static Application Security Testing (SAST) with native SARIF 2.1.0 output for GitHub Code Scanning'
+author: 'Nithishvelan M'
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+inputs:
+  target:
+    description: 'Path to Python file or directory to scan'
+    required: false
+    default: '.'
+  format:
+    description: 'Output format (console, json, sarif)'
+    required: false
+    default: 'sarif'
+  output:
+    description: 'Output report file path'
+    required: false
+    default: 'ast-guard.sarif'
+  severity:
+    description: 'Minimum severity threshold to report (CRITICAL, HIGH, MEDIUM, LOW, INFO)'
+    required: false
+    default: 'LOW'
+  fail-on:
+    description: 'Exit with error code 1 if findings reach or exceed this severity (CRITICAL, HIGH, MEDIUM, LOW, NEVER)'
+    required: false
+    default: 'HIGH'
+  disable-rules:
+    description: 'Space-separated list of rule IDs to disable (e.g. "AG-101 AG-104")'
+    required: false
+    default: ''
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install ast-guard
+      shell: bash
+      run: |
+        python -m pip install --upgrade pip
+        pip install "${{ github.action_path }}"
+
+    - name: Execute ast-guard scan
+      shell: bash
+      run: |
+        ARGS="--format ${{ inputs.format }} --output ${{ inputs.output }} --severity ${{ inputs.severity }} --fail-on ${{ inputs.fail-on }}"
+        if [ -n "${{ inputs.disable-rules }}" ]; then
+          for r in ${{ inputs.disable-rules }}; do
+            ARGS="$ARGS --disable-rule $r"
+          done
+        fi
+        echo "Running: ast-guard ${{ inputs.target }} $ARGS"
+        ast-guard "${{ inputs.target }}" $ARGS
