@@ -18,10 +18,11 @@ class RuleContext:
     Context passed to rules during AST node inspection.
     """
 
-    def __init__(self, file_path: Path, source_code: str):
+    def __init__(self, file_path: Path, source_code: str, tree: Optional[Any] = None):
         self.file_path = file_path
         self.source_code = source_code
         self.source_lines = source_code.splitlines()
+        self.tree = tree
         self.suppressions: Dict[int, Set[str]] = self._parse_suppressions(source_code)
 
     def _parse_suppressions(self, source: str) -> Dict[int, Set[str]]:

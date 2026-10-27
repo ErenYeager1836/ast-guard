@@ -75,8 +75,31 @@ class SQLInjectionRule(BaseRule):
 
         first_arg = node.args[0]
 
-        # Inspect if first argument is formatted dynamically
+        # Case 1: First argument is directly formatted dynamically
         if self.is_string_formatting(first_arg):
             return [self.create_finding(node, context)]
+
+        # Case 2: Intra-procedural variable inspection: first_arg is an identifier (ast.Name)
+        # whose assigned value earlier in the file was constructed via dynamic string formatting
+        if isinstance(first_arg, ast.Name) and getattr(context, "tree", None):
+            var_name = first_arg.id
+            call_line = getattr(node, "lineno", 0)
+            for ast_node in ast.walk(context.tree):
+                if isinstance(ast_node, ast.Assign):
+                    assign_line = getattr(ast_node, "lineno", 0)
+                    if assign_line < call_line:
+                        for target in ast_node.targets:
+                            if isinstance(target, ast.Name) and target.id == var_name:
+                                if self.is_string_formatting(ast_node.value):
+                                    return [
+                                        self.create_finding(
+                                            node,
+                                            context,
+                                            message=(
+                                                f"Possible SQL injection detected: variable '{var_name}' passed to '{call_name}()' "
+                                                f"was dynamically formatted on line {assign_line}."
+                                            ),
+                                        )
+                                    ]
 
         return []

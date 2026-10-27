@@ -25,7 +25,7 @@ from ast_guard.rules.tempfile_mktemp import InsecureTempfileRule
 def run_rule_on_code(rule, code: str):
     """Helper to parse a code snippet and evaluate a rule across all matching nodes."""
     tree = ast.parse(code)
-    context = RuleContext(file_path=Path("sample.py"), source_code=code)
+    context = RuleContext(file_path=Path("sample.py"), source_code=code, tree=tree)
     findings = []
     for node in ast.walk(tree):
         if isinstance(node, rule.target_node_types):
@@ -45,6 +45,13 @@ class TestSQLInjectionRule(unittest.TestCase):
         self.assertEqual(len(findings), 1)
         self.assertEqual(findings[0].rule_id, "AG-101")
         self.assertEqual(findings[0].severity, Severity.HIGH)
+
+    def test_sqli_assigned_variable_triggers(self):
+        code = 'q = f"SELECT * FROM users WHERE id = {user_id}"\ncursor.execute(q)'
+        findings = run_rule_on_code(self.rule, code)
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0].rule_id, "AG-101")
+        self.assertIn("variable 'q'", findings[0].message)
 
     def test_sqli_percent_formatting_triggers(self):
         code = 'cursor.execute("SELECT * FROM users WHERE name = \'%s\'" % name)'

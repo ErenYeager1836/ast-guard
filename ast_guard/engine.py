@@ -161,7 +161,7 @@ class ScannerEngine:
             )
             return
 
-        context = RuleContext(file_path=file_path, source_code=source_code)
+        context = RuleContext(file_path=file_path, source_code=source_code, tree=tree)
         visitor = ASTScannerVisitor(self.rules_by_type, context)
         visitor.visit(tree)
 
