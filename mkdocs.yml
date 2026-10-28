@@ -1,0 +1,21 @@
+site_name: ast-guard Documentation
+site_description: Lightweight AST-based Static Application Security Testing (SAST) with native SARIF 2.1.0 output
+site_author: Nithishvelan M
+repo_url: https://github.com/ErenYeager1836/ast-guard
+repo_name: ErenYeager1836/ast-guard
+
+theme:
+  name: material
+  palette:
+    primary: indigo
+    accent: blue
+  features:
+    - content.code.copy
+    - navigation.tabs
+    - navigation.sections
+
+nav:
+  - Home: index.md
+  - Architecture:
+      - ADR 0001: AST Visitor vs Regex: adr/0001-ast-visitor-vs-regex-sast.md
+  - GitHub Action: action.md
