@@ -104,6 +104,13 @@ Examples:
     )
 
     parser.add_argument(
+        "--include-tests",
+        action="store_true",
+        dest="include_tests",
+        help="Include test directories (tests/, test/, testing/) in recursive directory scans (excluded by default).",
+    )
+
+    parser.add_argument(
         "--no-color",
         action="store_true",
         help="Disable ANSI color codes in console output.",
@@ -158,6 +165,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         disabled_rules=args.disabled_rules,
         min_severity=min_severity,
         custom_ignored_dirs=set(args.custom_ignored_dirs or []),
+        include_tests=args.include_tests,
     )
 
     targets = args.targets if args.targets else ["."]

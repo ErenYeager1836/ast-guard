@@ -106,6 +106,31 @@ class TestScannerEngine(unittest.TestCase):
         self.assertEqual(result.files_scanned, 1)
         self.assertEqual(len(result.findings), 1)
 
+    def test_engine_excludes_test_directories_by_default(self):
+        tests_dir = self.base_path / "tests"
+        tests_dir.mkdir(parents=True, exist_ok=True)
+        test_file = tests_dir / "test_mock.py"
+        test_file.write_text("import pickle\npickle.loads(b'payload')\n", encoding="utf-8")
+
+        engine = ScannerEngine(include_tests=False)
+        result = engine.scan_path(self.base_path)
+
+        self.assertEqual(result.files_scanned, 0)
+        self.assertEqual(len(result.findings), 0)
+
+    def test_engine_includes_test_directories_when_flag_enabled(self):
+        tests_dir = self.base_path / "tests"
+        tests_dir.mkdir(parents=True, exist_ok=True)
+        test_file = tests_dir / "test_mock.py"
+        test_file.write_text("import pickle\npickle.loads(b'payload')\n", encoding="utf-8")
+
+        engine = ScannerEngine(include_tests=True)
+        result = engine.scan_path(self.base_path)
+
+        self.assertEqual(result.files_scanned, 1)
+        self.assertEqual(len(result.findings), 1)
+        self.assertEqual(result.findings[0].rule_id, "AG-103")
+
 
 if __name__ == "__main__":
     unittest.main()

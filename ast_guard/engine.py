@@ -66,15 +66,23 @@ class ScannerEngine:
         "node_modules",
     }
 
+    DEFAULT_TEST_DIRS: Set[str] = {
+        "tests",
+        "test",
+        "testing",
+    }
+
     def __init__(
         self,
         registry: Optional[RuleRegistry] = None,
         disabled_rules: Optional[List[str]] = None,
         min_severity: Severity = Severity.LOW,
         custom_ignored_dirs: Optional[Set[str]] = None,
+        include_tests: bool = False,
     ):
         self.registry = registry or get_default_registry()
         self.min_severity = min_severity
+        self.include_tests = include_tests
         self.ignored_dirs = set(self.DEFAULT_IGNORED_DIRS)
         if custom_ignored_dirs:
             self.ignored_dirs.update(custom_ignored_dirs)
@@ -131,8 +139,13 @@ class ScannerEngine:
 
         collected: List[Path] = []
         for root, dirs, files in os.walk(path):
-            # Prune ignored directories in-place to avoid descending into them
-            dirs[:] = [d for d in dirs if d not in self.ignored_dirs and not d.endswith(".egg-info")]
+            # Prune ignored directories and test directories in-place (unless include_tests is True)
+            dirs[:] = [
+                d for d in dirs
+                if d not in self.ignored_dirs
+                and not d.endswith(".egg-info")
+                and (self.include_tests or d not in self.DEFAULT_TEST_DIRS)
+            ]
 
             for file in files:
                 if file.endswith(".py"):

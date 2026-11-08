@@ -92,6 +92,20 @@ class TestCLI(unittest.TestCase):
         exit_code = main([str(f1), str(f2), "--fail-on", "HIGH"])
         self.assertEqual(exit_code, 1)
 
+    @patch("sys.stdout")
+    def test_cli_excludes_test_dir_by_default_and_includes_with_flag(self, mock_stdout):
+        test_dir = self.base_path / "tests"
+        test_dir.mkdir(parents=True, exist_ok=True)
+        (test_dir / "test_exploit.py").write_text("import os\nos.system('id')\n", encoding="utf-8")
+
+        # Excluded by default
+        exit_code_default = main([str(self.base_path), "--fail-on", "HIGH"])
+        self.assertEqual(exit_code_default, 0)
+
+        # Included with --include-tests
+        exit_code_included = main([str(self.base_path), "--include-tests", "--fail-on", "HIGH"])
+        self.assertEqual(exit_code_included, 1)
+
 
 if __name__ == "__main__":
     unittest.main()
