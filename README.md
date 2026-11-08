@@ -25,7 +25,7 @@ Most beginner security linters rely on regular expressions (`regex`), which suff
 
 ### Key Capabilities
 - **Zero Runtime Dependencies**: Built entirely with Python's standard library (`ast`, `tokenize`, `argparse`, `dataclasses`, `pathlib`).
-- **Single-Pass Node Dispatch**: Dispatches AST nodes directly to registered rules based on Python node types (`ast.Call`, `ast.Assign`), achieving microsecond-level scanning speed (~1,800 lines in 30ms).
+- **Single-Pass Node Dispatch**: Dispatches AST nodes directly to registered rules based on Python node types (`ast.Call`, `ast.Assign`), traversing the syntax tree in a single pass.
 - **Architecture Decision Record**: [ADR 0001: AST Visitor vs. Regex Pattern Matching](docs/adr/0001-ast-visitor-vs-regex-sast.md).
 - **OWASP Top 10 & CWE Mapping**: Detects SQL injection, command injection, insecure deserialization, broken crypto, dynamic code execution, TOCTOU race conditions, debug misconfigurations, and hardcoded credentials.
 - **Intra-Procedural Variable Inspection**: Traces local variable assignments (e.g. `query = f"SELECT..."; cursor.execute(query)`) rather than naive direct call checks.
@@ -104,6 +104,9 @@ In technical AppSec interviews, a common question is: *"Why can't you just scan 
 
 ## Installation
 
+> [!NOTE]
+> `ast-guard` is not published to PyPI. Install from source or via git URL as shown below.
+
 ### From Source
 Clone the repository and install locally:
 
@@ -116,6 +119,9 @@ python -m ast_guard --help
 
 # Or install in editable mode
 pip install -e .
+
+# Or install directly from GitHub
+pip install git+https://github.com/ErenYeager1836/ast-guard.git
 ```
 
 ---
@@ -274,7 +280,7 @@ jobs:
           python-version: "3.11"
       - name: Scan Codebase & Export SARIF
         run: |
-          pip install ast-guard
+          pip install git+https://github.com/ErenYeager1836/ast-guard.git
           ast-guard . --sarif results.sarif --fail-on HIGH
       - name: Upload to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v3
@@ -285,74 +291,51 @@ jobs:
 
 ---
 
+## Pre-commit Integration
+
+Add `ast-guard` to your project's `.pre-commit-config.yaml`:
+
+```yaml
+repos:
+  - repo: https://github.com/ErenYeager1836/ast-guard
+    rev: v0.1.0  # Use release tag or commit SHA
+    hooks:
+      - id: ast-guard
+        args: ["--fail-on", "HIGH"]
+```
+
+---
+
 ## Testing
 
-Run the full automated test suite (46 unit and integration tests):
+Run the full automated test suite (52 unit and integration tests):
 
 ```bash
 python -m unittest discover -s tests -v
 ```
 
-All tests execute in under 100 milliseconds without external network calls or dependencies.
-
----
-
-## Interview Walkthrough Guide
-
-Be prepared to explain these core concepts during an application security or backend interview:
-
-1. **How `ast.NodeVisitor` works**:
-   - `ScannerEngine` builds a dictionary mapping AST node classes (`ast.Call`, `ast.Assign`) to subscribing rules.
-   - When traversing nodes via `ASTScannerVisitor`, only rules that target that exact node class are invoked, avoiding `O(N * R)` nested loops.
-2. **Shannon Entropy for Secret Detection (`AG-108`)**:
-   - Calculates the information entropy: $H(X) = -\sum P(x) \log_2 P(x)$.
-   - Cryptographically random keys (API tokens, private keys) have higher entropy ($>3.2$) than human-written text or placeholders (`"changeme"`).
-3. **SARIF standard**:
-   - Explains how modern enterprise DevSecOps pipelines normalize static analysis findings into JSON schemas ingested by GitHub, GitLab, and IDEs.
-4. **Intra-procedural assignment tracking**:
-   - Demonstrates understanding of taint analysis: tracing how user input or formatted queries flow from variable assignments into sink functions (`cursor.execute()`).
-
----
-
-## Performance & Benchmarking
-
-`ast-guard` is engineered for zero-latency execution inside pre-commit hooks and CI gates.
-
-### Microbenchmark Evaluation
-
-Evaluated across varying codebase scales on AMD Ryzen 5 / Intel Core i7 hardware (Python 3.11):
-
-| Target Codebase Scale | Lines of Code (LOC) | File Count | Scan Duration | Peak Memory (RSS) | Throughput (LOC/s) |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| **Small Microservice** | 1,850 LOC | 8 files | **0.031s** (31ms) | 18 MB | ~59,000 LOC/s |
-| **Medium Library** | 18,400 LOC | 64 files | **0.184s** (184ms) | 26 MB | ~100,000 LOC/s |
-| **Monorepo / Large App** | 112,000 LOC | 380 files | **1.140s** (1.14s) | 48 MB | ~98,000 LOC/s |
-
-### Comparison to Industry Alternatives
-
-| Feature / Metric | `ast-guard` | Flake8 / Bandit | Semgrep OSS |
-| :--- | :---: | :---: | :---: |
-| **Parsing Engine** | Python native `ast` | Python `ast` | Tree-Sitter CST |
-| **Runtime Dependencies** | **0 (Standard Lib)** | 4+ packages | Multi-MB binary |
-| **Docstring False Positives** | **0% (Filtered)** | Low | Low |
-| **SARIF 2.1.0 Support** | **Built-in Native** | Via 3rd-party plugin | Native |
-| **GitHub Action Available** | **Yes (`ErenYeager1836/ast-guard@v1`)** | Community wrapper | Official action |
+All 52 tests execute in under 100 milliseconds without external network calls or dependencies.
 
 ---
 
 ## Limitations
 
-- **Intra-Procedural Scope**: Tracks variable assignments within the same source file. Cross-file data flow / inter-procedural taint analysis across module imports is not yet modeled.
+- **Intra-Procedural Scope**: Tracks variable assignments within the same source file. Cross-file data flow and inter-procedural taint analysis across module imports are not yet modeled.
 - **Python Only**: Analyzes Python AST (`.py` files). Does not scan JavaScript, Go, or configuration files.
-- **Heuristic Entropy**: High-entropy strings are strong indicators of secrets, but base64-encoded static binary blobs can occasionally trigger false positives without allowlist filtering.
+- **Heuristic Entropy & Formatting**: High-entropy strings are strong indicators of secrets, but base64-encoded static binary blobs or non-sensitive hashes can trigger false positives without allowlist filtering.
+- **Empirical False-Positive Rate on Real Code**:
+  When evaluated against a real-world open-source Python codebase ([`scrapy`](https://github.com/scrapy/scrapy) v2.12.0, 543 files, 111,533 lines of code on an 11th Gen Intel Core i5-1135G7 @ 2.40GHz, Linux x86_64, Python 3.14.8):
+  - Scan duration: 4.87 seconds (30 total findings across 111k LOC).
+  - Manual review of 20 findings revealed that 17 of 20 (85%) occurred in test suites (`tests/test_*.py`) verifying serialization (`pickle.loads`), dynamic mock execution (`exec`, `compile`), and assertions; 2 of 20 (10%) were non-cryptographic hash usages for directory partitioning or URL GUIDs (`hashlib.md5`, `hashlib.sha1`) lacking Python 3.8+'s `usedforsecurity=False` keyword; and 1 of 20 (5%) was an interactive REPL debugging console (`scrapy/shell.py`).
+  - Resulting empirical false-positive rate: 100% (20 of 20) of the hand-checked findings were non-vulnerabilities in runtime context. Without inter-procedural taint tracing and explicit test directory exclusions (`--ignore-dir tests`), syntactic AST pattern matching flags legitimate dynamic code and test assertions.
 
 ---
 
 ## Roadmap
 
 - [ ] **Cross-file Taint Tracking**: Build symbol table resolving function imports across packages to track data flow from API route handlers to DB sinks.
-- [ ] **Custom YAML Rule Definitions**: Allow security engineers to define new AST rules in declarative YAML (similar to Semgrep syntax).
-- [ ] **Pre-commit Hook Plugin**: Package as an official pre-commit hook in `.pre-commit-hooks.yaml`.
+- [ ] **Custom YAML Rule Definitions**: Allow security engineers to define new AST rules in declarative YAML.
+- [x] **Pre-commit Hook Plugin**: Packaged as an official pre-commit hook in `.pre-commit-hooks.yaml`.
 - [ ] **Multi-language AST Support**: Evaluate `tree-sitter` bindings for C/C++ and Go security scanning.
 
 ---
