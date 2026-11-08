@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/ErenYeager1836/ast-guard/actions/workflows/ci.yml/badge.svg)](https://github.com/ErenYeager1836/ast-guard/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Python: 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/)
+[![Python: 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 [![Zero Dependencies](https://img.shields.io/badge/dependencies-0%20runtime-brightgreen.svg)](pyproject.toml)
 [![SARIF 2.1.0](https://img.shields.io/badge/SARIF-2.1.0%20Compliant-orange.svg)](https://sarifweb.azurewebsites.net/)
 
@@ -329,7 +329,7 @@ All 56 tests execute in under 1 second without external network calls or depende
   - **With Test Directories Included (`--include-tests`)**: 543 files scanned, 0 files skipped, 111,533 lines of code, and 30 findings total (17 located in `tests/`, 13 in production code).
   - **With Default Test Exclusion**: 210 files scanned, 333 files skipped, 39,685 lines of code, yielding 13 findings in ~1.2s.
   - **Production Findings Review**: 13 of 13 production findings reviewed:
-    - 4 Insecure Deserialization (`pickle.load` / `pickle.loads` in `spiderstate.py` and `httpcache.py`).
+    - 4 Insecure Deserialization (`pickle.load` / `pickle.loads` in `spiderstate.py` and `httpcache.py`; valid pattern matches, risk depends on file trust).
     - 4 Dynamic Code Execution (`eval` / `compile` in `shell.py`, `utils/engine.py`, and `remote_control.py`).
     - 5 Weak Cryptography (`hashlib.md5` / `hashlib.sha1` in `pqueues.py`, `utils/request.py`, `pipelines/images.py`, and `pipelines/files.py`).
 - **Noqa Comment Suppression Limitation**: Scrapy marks its dynamic execution, pickle caches, and non-cryptographic hashes with flake8/bandit `# noqa: S...` comments (e.g., `# noqa: S307`, `# noqa: S324`, `# noqa: S301`). `ast-guard` honors `# nosec` and `# ast-guard: ignore[...]`, but does not honor `# noqa: S...` directives.
