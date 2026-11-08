@@ -1,0 +1,7 @@
+- id: ast-guard
+  name: ast-guard SAST Scanner
+  description: Lightweight AST-based Static Application Security Testing (SAST) Scanner
+  entry: ast-guard
+  language: python
+  types: [python]
+  require_serial: true
