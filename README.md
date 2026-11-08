@@ -325,9 +325,14 @@ All 56 tests execute in under 1 second without external network calls or depende
 - **Test Directory Exclusions**: By default, recursive directory scans ignore standard test suites (`tests/`, `test/`, `testing/`) to minimize false positives from test fixtures and mocks. Pass `--include-tests` to scan test suites.
 - **Heuristic Entropy & Formatting**: High-entropy strings are strong indicators of secrets, but base64-encoded static binary blobs or non-sensitive hashes can trigger false positives without allowlist filtering.
 - **Evaluation on Real-World Code (`scrapy`)**:
-  When evaluated against [`scrapy`](https://github.com/scrapy/scrapy) v2.12.0:
-  - **With Test Directories Included (`--include-tests`)**: 11 to 30 findings across the codebase (depending on severity threshold and submodule trees). In a manual review of the **first 20 of 30 findings**, 17 were located in test suites (`tests/test_*.py`) verifying serialization (`pickle.loads`), dynamic execution (`exec`, `compile`), and assertions; 2 were non-cryptographic hash usages for directory partitioning or GUIDs (`hashlib.md5`, `hashlib.sha1`) lacking Python 3.8+'s `usedforsecurity=False` keyword; and 1 was an interactive REPL debugging console (`scrapy/shell.py`).
-  - **With Default Test Exclusion**: Re-scanning the production codebase yields **0 findings across 178 files** (26,410 lines of code in ~1.2s), eliminating test-fixture noise while retaining full coverage of application modules.
+  When evaluated against [`scrapy`](https://github.com/scrapy/scrapy) (commit `1bc0473909e4e5a3d0b62710715b6383c5641765`):
+  - **With Test Directories Included (`--include-tests`)**: 543 files scanned, 0 files skipped, 111,533 lines of code, and 30 findings total (17 located in `tests/`, 13 in production code).
+  - **With Default Test Exclusion**: 210 files scanned, 333 files skipped, 39,685 lines of code, yielding 13 findings in ~1.2s.
+  - **Production Findings Review**: 13 of 13 production findings reviewed:
+    - 4 Insecure Deserialization (`pickle.load` / `pickle.loads` in `spiderstate.py` and `httpcache.py`).
+    - 4 Dynamic Code Execution (`eval` / `compile` in `shell.py`, `utils/engine.py`, and `remote_control.py`).
+    - 5 Weak Cryptography (`hashlib.md5` / `hashlib.sha1` in `pqueues.py`, `utils/request.py`, `pipelines/images.py`, and `pipelines/files.py`).
+- **Noqa Comment Suppression Limitation**: Scrapy marks its dynamic execution, pickle caches, and non-cryptographic hashes with flake8/bandit `# noqa: S...` comments (e.g., `# noqa: S307`, `# noqa: S324`, `# noqa: S301`). `ast-guard` honors `# nosec` and `# ast-guard: ignore[...]`, but does not honor `# noqa: S...` directives.
 
 ---
 
