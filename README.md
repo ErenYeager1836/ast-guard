@@ -308,13 +308,13 @@ repos:
 
 ## Testing
 
-Run the full automated test suite (55 unit and integration tests):
+Run the full automated test suite (56 unit and integration tests):
 
 ```bash
 python -m unittest discover -s tests -v
 ```
 
-All 55 tests execute in under 1 second without external network calls or dependencies.
+All 56 tests execute in under 1 second without external network calls or dependencies.
 
 ---
 

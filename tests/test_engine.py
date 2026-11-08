@@ -116,6 +116,7 @@ class TestScannerEngine(unittest.TestCase):
         result = engine.scan_path(self.base_path)
 
         self.assertEqual(result.files_scanned, 0)
+        self.assertEqual(result.files_skipped, 1)
         self.assertEqual(len(result.findings), 0)
 
     def test_engine_includes_test_directories_when_flag_enabled(self):
@@ -128,8 +129,24 @@ class TestScannerEngine(unittest.TestCase):
         result = engine.scan_path(self.base_path)
 
         self.assertEqual(result.files_scanned, 1)
+        self.assertEqual(result.files_skipped, 0)
         self.assertEqual(len(result.findings), 1)
         self.assertEqual(result.findings[0].rule_id, "AG-103")
+
+    def test_engine_counts_files_skipped_for_custom_ignore_and_non_python(self):
+        custom_dir = self.base_path / "vendored"
+        custom_dir.mkdir(parents=True, exist_ok=True)
+        (custom_dir / "vendored_lib.py").write_text("x = 1\n", encoding="utf-8")
+        (self.base_path / "app.py").write_text("y = 2\n", encoding="utf-8")
+        non_py = self.base_path / "README.md"
+        non_py.write_text("# Readme\n", encoding="utf-8")
+
+        engine = ScannerEngine(custom_ignored_dirs={"vendored"})
+        # Scan base_path and also directly target non-python file
+        result = engine.scan_paths([self.base_path, non_py])
+
+        self.assertEqual(result.files_scanned, 1)  # only app.py
+        self.assertEqual(result.files_skipped, 2)  # vendored_lib.py + README.md
 
 
 if __name__ == "__main__":

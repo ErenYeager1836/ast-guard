@@ -104,7 +104,7 @@ def format_console(result: ScanResult, no_color: bool = False) -> str:
     # Summary Statistics Footer
     output.append(f"{Colors.BOLD}------------------------------------------------------------{Colors.RESET}")
     output.append(
-        f"Files Scanned: {result.files_scanned}  |  Lines: {result.lines_scanned}  |  "
+        f"Files Scanned: {result.files_scanned}  |  Files Skipped: {result.files_skipped}  |  Lines: {result.lines_scanned}  |  "
         f"Duration: {result.duration_seconds:.2f}s"
     )
     output.append(

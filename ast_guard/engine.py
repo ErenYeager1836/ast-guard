@@ -83,6 +83,7 @@ class ScannerEngine:
         self.registry = registry or get_default_registry()
         self.min_severity = min_severity
         self.include_tests = include_tests
+        self.custom_ignored_dirs = set(custom_ignored_dirs) if custom_ignored_dirs else set()
         self.ignored_dirs = set(self.DEFAULT_IGNORED_DIRS)
         if custom_ignored_dirs:
             self.ignored_dirs.update(custom_ignored_dirs)
@@ -117,8 +118,9 @@ class ScannerEngine:
                 result.errors.append(
                     ScanError(file_path=str(p), error_message=f"Target path does not exist: {p}")
                 )
+                result.files_skipped += 1
                 continue
-            collected_files.extend(self._collect_files(p))
+            collected_files.extend(self._collect_files(p, result))
 
         # Deduplicate while preserving discovery order
         seen: Set[Path] = set()
@@ -130,22 +132,45 @@ class ScannerEngine:
         result.duration_seconds = time.perf_counter() - start_time
         return result
 
-    def _collect_files(self, path: Path) -> List[Path]:
+    def _collect_files(self, path: Path, result: ScanResult) -> List[Path]:
         """
         Finds all Python files to scan, respecting ignore lists.
+        Counts skipped files (e.g. non-Python files passed directly,
+        or Python source files in test/ignored directories).
         """
         if path.is_file():
-            return [path] if path.suffix == ".py" else []
+            if path.suffix == ".py":
+                return [path]
+            result.files_skipped += 1
+            return []
 
         collected: List[Path] = []
         for root, dirs, files in os.walk(path):
-            # Prune ignored directories and test directories in-place (unless include_tests is True)
-            dirs[:] = [
-                d for d in dirs
-                if d not in self.ignored_dirs
-                and not d.endswith(".egg-info")
-                and (self.include_tests or d not in self.DEFAULT_TEST_DIRS)
-            ]
+            pruned_for_skip: List[str] = []
+            kept_dirs: List[str] = []
+            for d in dirs:
+                if not self.include_tests and d in self.DEFAULT_TEST_DIRS:
+                    pruned_for_skip.append(d)
+                elif d in self.custom_ignored_dirs:
+                    pruned_for_skip.append(d)
+                elif d in self.ignored_dirs or d.endswith(".egg-info"):
+                    # Silently ignore build/vcs/venv dirs
+                    pass
+                else:
+                    kept_dirs.append(d)
+            dirs[:] = kept_dirs
+
+            # Count Python source files in pruned test or custom-ignored directories as skipped
+            for pd in pruned_for_skip:
+                p_path = Path(root) / pd
+                for _, p_subdirs, p_files in os.walk(p_path):
+                    p_subdirs[:] = [
+                        sd for sd in p_subdirs
+                        if sd not in self.DEFAULT_IGNORED_DIRS and not sd.endswith(".egg-info")
+                    ]
+                    for pf in p_files:
+                        if pf.endswith(".py"):
+                            result.files_skipped += 1
 
             for file in files:
                 if file.endswith(".py"):
@@ -163,6 +188,7 @@ class ScannerEngine:
             result.errors.append(
                 ScanError(file_path=str(file_path), error_message=f"Failed to read file: {e}")
             )
+            result.files_skipped += 1
             return
 
         result.files_scanned += 1

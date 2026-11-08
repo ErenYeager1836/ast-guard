@@ -44,6 +44,7 @@ class TestFormatters(unittest.TestCase):
         self.assertIn("CWE-89", output)
         self.assertIn("app/db.py:42:4", output)
         self.assertIn("cursor.execute", output)
+        self.assertIn("Files Skipped: 0", output)
         self.assertIn("Findings: 1", output)
 
     def test_json_formatter(self):
@@ -51,6 +52,8 @@ class TestFormatters(unittest.TestCase):
         data = json.loads(raw_json)
 
         self.assertEqual(data["target_path"], "app/")
+        self.assertEqual(data["files_scanned"], 5)
+        self.assertEqual(data["files_skipped"], 0)
         self.assertEqual(data["summary"]["total_findings"], 1)
         self.assertEqual(data["summary"]["high"], 1)
         self.assertEqual(data["findings"][0]["rule_id"], "AG-101")

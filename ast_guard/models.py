@@ -140,6 +140,7 @@ class ScanResult:
     """
     target_path: str
     files_scanned: int = 0
+    files_skipped: int = 0
     lines_scanned: int = 0
     duration_seconds: float = 0.0
     findings: List[Finding] = field(default_factory=list)
@@ -170,6 +171,7 @@ class ScanResult:
         return {
             "target_path": self.target_path,
             "files_scanned": self.files_scanned,
+            "files_skipped": self.files_skipped,
             "lines_scanned": self.lines_scanned,
             "duration_seconds": round(self.duration_seconds, 4),
             "summary": {
