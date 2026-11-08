@@ -12,7 +12,7 @@ import os
 import time
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Type
+from typing import Dict, List, Optional, Sequence, Set, Type
 
 from ast_guard.context import RuleContext
 from ast_guard.models import Finding, ScanError, ScanResult, Severity
@@ -91,22 +91,33 @@ class ScannerEngine:
         """
         Scans a file or directory recursively and returns aggregated results.
         """
-        path = Path(target_path).resolve()
+        return self.scan_paths([target_path])
+
+    def scan_paths(self, target_paths: Sequence[str | Path]) -> ScanResult:
+        """
+        Scans one or more files or directories recursively and returns aggregated results.
+        """
         start_time = time.perf_counter()
+        paths = [Path(p).resolve() for p in target_paths]
 
-        result = ScanResult(target_path=str(path))
+        target_display = str(paths[0]) if len(paths) == 1 else f"{len(paths)} targets"
+        result = ScanResult(target_path=target_display)
 
-        if not path.exists():
-            result.errors.append(
-                ScanError(file_path=str(path), error_message=f"Target path does not exist: {path}")
-            )
-            result.duration_seconds = time.perf_counter() - start_time
-            return result
+        collected_files: List[Path] = []
+        for p in paths:
+            if not p.exists():
+                result.errors.append(
+                    ScanError(file_path=str(p), error_message=f"Target path does not exist: {p}")
+                )
+                continue
+            collected_files.extend(self._collect_files(p))
 
-        target_files = self._collect_files(path)
-
-        for file_path in target_files:
-            self._scan_single_file(file_path, result)
+        # Deduplicate while preserving discovery order
+        seen: Set[Path] = set()
+        for file_path in collected_files:
+            if file_path not in seen:
+                seen.add(file_path)
+                self._scan_single_file(file_path, result)
 
         result.duration_seconds = time.perf_counter() - start_time
         return result

@@ -118,7 +118,11 @@ def format_sarif(result: ScanResult, registry: RuleRegistry | None = None, inden
     Generates a full SARIF 2.1.0 document for the scan results.
     """
     reg = registry or get_default_registry()
-    base_path = Path(result.target_path) if Path(result.target_path).is_dir() else Path(result.target_path).parent
+    try:
+        t_path = Path(result.target_path)
+        base_path = t_path if t_path.is_dir() else (t_path.parent if t_path.exists() else Path.cwd())
+    except Exception:
+        base_path = Path.cwd()
 
     sarif_doc: Dict[str, Any] = {
         "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",

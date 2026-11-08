@@ -76,7 +76,7 @@ class InsecureDebugBindingRule(BaseRule):
 
             # Check host='0.0.0.0'
             elif kw.arg == "host":
-                if isinstance(kw.value, ast.Constant) and kw.value.value in {"0.0.0.0", "::"}:
+                if isinstance(kw.value, ast.Constant) and kw.value.value in {"0.0.0.0", "::"}:  # nosec B104
                     msg = (
                         f"Server bound to all interfaces ('{kw.value.value}') via '{call_name}()'. "
                         "May expose unintended services to the local network."

@@ -36,10 +36,10 @@ Examples:
     )
 
     parser.add_argument(
-        "target",
-        nargs="?",
-        default=".",
-        help="Path to Python file or directory to scan (default: current directory).",
+        "targets",
+        nargs="*",
+        default=[],
+        help="Path(s) to Python file(s) or directory to scan (default: current directory).",
     )
 
     parser.add_argument(
@@ -160,7 +160,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         custom_ignored_dirs=set(args.custom_ignored_dirs or []),
     )
 
-    result = engine.scan_path(args.target)
+    targets = args.targets if args.targets else ["."]
+    result = engine.scan_paths(targets)
 
     # Handle primary output format
     if args.format == "json":

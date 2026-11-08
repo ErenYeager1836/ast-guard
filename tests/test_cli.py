@@ -72,6 +72,26 @@ class TestCLI(unittest.TestCase):
         exit_code = main(["--list-rules"])
         self.assertEqual(exit_code, 0)
 
+    @patch("sys.stdout")
+    def test_cli_multiple_targets(self, mock_stdout):
+        f1 = self.base_path / "f1.py"
+        f2 = self.base_path / "f2.py"
+        f1.write_text("x = 1\n", encoding="utf-8")
+        f2.write_text("y = 2\n", encoding="utf-8")
+
+        exit_code = main([str(f1), str(f2)])
+        self.assertEqual(exit_code, 0)
+
+    @patch("sys.stdout")
+    def test_cli_multiple_targets_with_vulnerability(self, mock_stdout):
+        f1 = self.base_path / "clean_target.py"
+        f2 = self.base_path / "vuln_target.py"
+        f1.write_text("x = 1\n", encoding="utf-8")
+        f2.write_text("import os\nos.system('ls')\n", encoding="utf-8")
+
+        exit_code = main([str(f1), str(f2), "--fail-on", "HIGH"])
+        self.assertEqual(exit_code, 1)
+
 
 if __name__ == "__main__":
     unittest.main()

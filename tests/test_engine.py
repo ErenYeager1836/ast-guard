@@ -82,6 +82,30 @@ class TestScannerEngine(unittest.TestCase):
         self.assertEqual(len(result.findings), 1)
         self.assertEqual(result.findings[0].rule_id, "AG-103")
 
+    def test_engine_multiple_paths(self):
+        f1 = self.base_path / "mod1.py"
+        f2 = self.base_path / "mod2.py"
+        f1.write_text("import pickle\npickle.loads(b'd')\n", encoding="utf-8")
+        f2.write_text("import os\nos.system('ls')\n", encoding="utf-8")
+
+        engine = ScannerEngine()
+        result = engine.scan_paths([f1, f2])
+
+        self.assertEqual(result.files_scanned, 2)
+        self.assertEqual(len(result.findings), 2)
+        rule_ids = {f.rule_id for f in result.findings}
+        self.assertEqual(rule_ids, {"AG-103", "AG-102"})
+
+    def test_engine_duplicate_paths_deduplicated(self):
+        f1 = self.base_path / "mod_dup.py"
+        f1.write_text("import os\nos.system('ls')\n", encoding="utf-8")
+
+        engine = ScannerEngine()
+        result = engine.scan_paths([f1, f1])
+
+        self.assertEqual(result.files_scanned, 1)
+        self.assertEqual(len(result.findings), 1)
+
 
 if __name__ == "__main__":
     unittest.main()
